@@ -1,33 +1,44 @@
-# main.py
-
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from config import MENUS
+from middleware import process_menu
+from ai_engine import detect_intent
 import random
 
-app = FastAPI(title="AI Enabled Conversational IVR - Hospital")
+app = FastAPI(title="Hospital Conversational IVR")
 
-# -----------------------
-# In-Memory Session Store
-# -----------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 sessions = {}
+call_logs = []
 
-# -----------------------
+# -------------------
 # Request Models
-# -----------------------
+# -------------------
 
 class StartCall(BaseModel):
     caller_number: str = "Unknown"
 
-class InputData(BaseModel):
+
+class DigitInput(BaseModel):
     session_id: str
     digit: str
 
 
-# -----------------------
-# Welcome Prompt
-# -----------------------
+class TextInput(BaseModel):
+    session_id: str
+    text: str
+
+
+# -------------------
+# Start Call
+# -------------------
 
 @app.post("/ivr/start")
 def start_call(data: StartCall):
@@ -38,71 +49,91 @@ def start_call(data: StartCall):
         "current_menu": "main"
     }
 
+    call_logs.append({
+        "session_id": session_id,
+        "event": "call_started"
+    })
+
     return {
         "session_id": session_id,
-        "menu": "main",
         "prompt": MENUS["main"]["prompt"]
     }
 
 
-# -----------------------
-# Menu Handling Logic
-# -----------------------
+# -------------------
+# Keypad Input
+# -------------------
 
 @app.post("/ivr/input")
-def handle_input(data: InputData):
+def handle_digit(data: DigitInput):
 
     session = sessions.get(data.session_id)
 
     if not session:
         return {"error": "Session not found"}
 
-    current_menu = session["current_menu"]
+    call_logs.append({
+        "session_id": data.session_id,
+        "digit": data.digit
+    })
 
-    if current_menu not in MENUS:
-        return {"error": "Invalid menu"}
+    result = process_menu(session, data.digit)
 
-    menu = MENUS[current_menu]
+    if result.get("status") == "hangup":
+        sessions.pop(data.session_id, None)
 
-    # Check if option exists
-    if data.digit not in menu["options"]:
+    return result
+
+
+# -------------------
+# Conversational Input
+# -------------------
+
+@app.post("/ivr/conversation")
+def handle_text(data: TextInput):
+
+    session = sessions.get(data.session_id)
+
+    if not session:
+        return {"error": "Session not found"}
+
+    call_logs.append({
+        "session_id": data.session_id,
+        "text": data.text
+    })
+
+    digit = detect_intent(data.text)
+
+    if not digit:
         return {
-            "status": "invalid",
-            "prompt": menu["prompt"]
+            "prompt": "Sorry I didn't understand. Please say appointment, lab report, or billing."
         }
 
-    option = menu["options"][data.digit]
-    action = option["action"]
+    result = process_menu(session, digit)
 
-    # -----------------------
-    # GOTO another menu
-    # -----------------------
-    if action == "goto":
-        target_menu = option["target"]
-        session["current_menu"] = target_menu
+    if result.get("status") == "hangup":
+        sessions.pop(data.session_id, None)
 
-        return {
-            "status": "ok",
-            "menu": target_menu,
-            "prompt": MENUS[target_menu]["prompt"]
-        }
-
-    # -----------------------
-    # END call
-    # -----------------------
-    elif action == "end":
-        del sessions[data.session_id]
-
-        return {
-            "status": "hangup",
-            "message": option["message"]
-        }
+    return result
 
 
-# -----------------------
+# -------------------
+# Analytics
+# -------------------
+
+@app.get("/analytics")
+def analytics():
+
+    return {
+        "total_logs": len(call_logs),
+        "logs": call_logs
+    }
+
+
+# -------------------
 # Health Check
-# -----------------------
+# -------------------
 
 @app.get("/")
 def root():
-    return {"status": "Hospital IVR Backend Running"}
+    return {"status": "Hospital IVR Running"}

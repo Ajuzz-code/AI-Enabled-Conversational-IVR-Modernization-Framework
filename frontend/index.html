@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+<meta charset="UTF-8">
+<title>Care Hospital Conversational IVR</title>
+
+<style>
+
+body{
+font-family: Arial;
+background: linear-gradient(135deg,#0f172a,#1e293b);
+color:white;
+text-align:center;
+margin:0;
+padding:0;
+}
+
+h1{
+margin-top:20px;
+}
+
+.container{
+display:flex;
+justify-content:center;
+margin-top:30px;
+}
+
+.phone{
+
+width:350px;
+background:#111827;
+border-radius:25px;
+padding:20px;
+box-shadow:0 0 30px rgba(0,0,0,0.6);
+
+}
+
+.screen{
+
+background:black;
+height:250px;
+overflow-y:auto;
+border-radius:10px;
+padding:15px;
+text-align:left;
+font-size:14px;
+
+}
+
+button{
+
+padding:10px 15px;
+margin:5px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-size:14px;
+
+}
+
+.start{
+background:#16a34a;
+color:white;
+}
+
+.stop{
+background:#dc2626;
+color:white;
+}
+
+.key{
+background:#334155;
+color:white;
+width:60px;
+}
+
+.voice{
+background:#2563eb;
+color:white;
+}
+
+.send{
+background:#9333ea;
+color:white;
+}
+
+input{
+
+width:90%;
+padding:10px;
+margin-top:10px;
+border-radius:8px;
+border:none;
+
+}
+
+.keypad{
+margin-top:10px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<h1>🏥 Care Hospital</h1>
+
+<div class="container">
+
+<div class="phone">
+
+<div id="screen" class="screen"></div>
+
+<br>
+
+<button class="start" onclick="startCall()">📞 Start Call</button>
+
+<button class="stop" onclick="stopCall()">❌ Stop Call</button>
+
+<div class="keypad">
+
+<br>
+
+<button class="key" onclick="press('1')">1</button>
+<button class="key" onclick="press('2')">2</button>
+<button class="key" onclick="press('3')">3</button>
+
+<br>
+
+<button class="key" onclick="press('0')">0</button>
+<button class="key" onclick="press('9')">9</button>
+
+</div>
+
+<input id="textInput" placeholder="Type your request...">
+
+<br>
+
+<button class="send" onclick="sendText()">Send</button>
+
+<button class="voice" onclick="startVoice()">🎤 Speak</button>
+
+</div>
+
+</div>
+
+<script>
+
+const API="http://127.0.0.1:8000"
+
+let sessionId=null
+
+function show(msg){
+
+let screen=document.getElementById("screen")
+
+// remove IVR text from display
+let cleanText = msg.replace("IVR:","").trim()
+
+screen.innerHTML += "<p>" + cleanText + "</p>"
+
+screen.scrollTop = screen.scrollHeight
+
+// speak only IVR responses
+if(msg.startsWith("IVR:")){
+    speak(cleanText)
+}
+
+}
+
+function speak(text){
+
+const speech=new SpeechSynthesisUtterance(text)
+
+speech.lang="en-IN"
+
+speech.rate=0.9
+
+window.speechSynthesis.speak(speech)
+
+}
+
+async function startCall(){
+
+let res=await fetch(API+"/ivr/start",{
+
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({})
+
+})
+
+let data=await res.json()
+
+sessionId=data.session_id
+
+show("IVR: "+data.prompt)
+
+}
+
+function stopCall(){
+
+sessionId=null
+
+show("Call ended.")
+
+}
+
+async function press(d){
+
+if(!sessionId){
+
+show("Start call first")
+
+return
+
+}
+
+show("Pressed: "+d)
+
+let res=await fetch(API+"/ivr/input",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+
+session_id:sessionId,
+digit:d
+
+})
+
+})
+
+let data=await res.json()
+
+show("IVR: "+(data.prompt || data.message))
+
+}
+
+async function sendText(){
+
+if(!sessionId){
+
+show("Start call first")
+
+return
+
+}
+
+let text=document.getElementById("textInput").value
+
+show("You: "+text)
+
+let res=await fetch(API+"/ivr/conversation",{
+
+method:"POST",
+
+headers:{"Content-Type":"application/json"},
+
+body:JSON.stringify({
+
+session_id:sessionId,
+text:text
+
+})
+
+})
+
+let data=await res.json()
+
+show("IVR: "+(data.prompt || data.message))
+
+}
+
+function startVoice(){
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+
+const recognition=new SpeechRecognition()
+
+recognition.lang="en-IN"
+
+recognition.start()
+
+show("Listening...")
+
+recognition.onresult=function(event){
+
+let speechText=event.results[0][0].transcript
+
+document.getElementById("textInput").value=speechText
+
+show("You (voice): "+speechText)
+
+sendText()
+
+}
+
+}
+
+</script>
+
+</body>
+
+</html>

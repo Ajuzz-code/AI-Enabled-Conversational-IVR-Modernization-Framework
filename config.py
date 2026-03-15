@@ -1,6 +1,7 @@
 # config.py
 
 MENUS = {
+
     "main": {
         "prompt": "Welcome to Care Hospital. Press 1 for Appointments, 2 for Lab Reports, 3 for Billing, 9 for Reception.",
         "options": {
@@ -35,4 +36,5 @@ MENUS = {
             "0": {"action": "goto", "target": "main"}
         }
     }
+
 }

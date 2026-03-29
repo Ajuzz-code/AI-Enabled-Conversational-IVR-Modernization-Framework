@@ -1,12 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import random
+
 from config import MENUS
 from middleware import process_menu
 from ai_engine import detect_intent
-import random
+from conversation_engine import process_conversation
 
-app = FastAPI(title="Hospital Conversational IVR")
+app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,53 +18,32 @@ app.add_middleware(
 )
 
 sessions = {}
-call_logs = []
-
-# -------------------
-# Request Models
-# -------------------
 
 class StartCall(BaseModel):
     caller_number: str = "Unknown"
-
 
 class DigitInput(BaseModel):
     session_id: str
     digit: str
 
-
 class TextInput(BaseModel):
     session_id: str
     text: str
 
-
-# -------------------
-# Start Call
-# -------------------
-
 @app.post("/ivr/start")
 def start_call(data: StartCall):
-
     session_id = f"HOSP_{random.randint(1000,9999)}"
 
     sessions[session_id] = {
-        "current_menu": "main"
+        "current_menu": "main",
+        "history": [],
+        "conv_state": None
     }
-
-    call_logs.append({
-        "session_id": session_id,
-        "event": "call_started"
-    })
 
     return {
         "session_id": session_id,
-        "prompt": MENUS["main"]["prompt"]
+        "prompt": "Welcome to Care Hospital\n\n" + MENUS["main"]["prompt"]
     }
-
-
-# -------------------
-# Keypad Input
-# -------------------
 
 @app.post("/ivr/input")
 def handle_digit(data: DigitInput):
@@ -71,11 +52,17 @@ def handle_digit(data: DigitInput):
 
     if not session:
         return {"error": "Session not found"}
+    
+    session["history"].append(data.digit)
 
-    call_logs.append({
-        "session_id": data.session_id,
-        "digit": data.digit
-    })
+    # ✅ RESET conversational state when keypad used
+    if session.get("conv_state") == "patient_id":
+        pass
+    else:
+
+        session["conv_state"] = None
+
+   
 
     result = process_menu(session, data.digit)
 
@@ -83,11 +70,6 @@ def handle_digit(data: DigitInput):
         sessions.pop(data.session_id, None)
 
     return result
-
-
-# -------------------
-# Conversational Input
-# -------------------
 
 @app.post("/ivr/conversation")
 def handle_text(data: TextInput):
@@ -97,43 +79,22 @@ def handle_text(data: TextInput):
     if not session:
         return {"error": "Session not found"}
 
-    call_logs.append({
-        "session_id": data.session_id,
-        "text": data.text
-    })
+    # ✅ TRY CONVERSATION FIRST
+    reply = process_conversation(session, data.text)
 
-    digit = detect_intent(data.text)
+    if reply:
+        return {"prompt": reply}
 
-    if not digit:
-        return {
-            "prompt": "Sorry I didn't understand. Please say appointment, lab report, or billing."
-        }
+    # ✅ FALLBACK TO IVR MENU
+    digit = detect_intent(data.text, session["current_menu"])
 
-    result = process_menu(session, digit)
-
-    if result.get("status") == "hangup":
-        sessions.pop(data.session_id, None)
-
-    return result
-
-
-# -------------------
-# Analytics
-# -------------------
-
-@app.get("/analytics")
-def analytics():
+    if digit:
+        return process_menu(session, digit)
 
     return {
-        "total_logs": len(call_logs),
-        "logs": call_logs
+        "prompt": "Sorry I didn't understand"
     }
-
-
-# -------------------
-# Health Check
-# -------------------
 
 @app.get("/")
 def root():
-    return {"status": "Hospital IVR Running"}
+    return {"status": "Running"}

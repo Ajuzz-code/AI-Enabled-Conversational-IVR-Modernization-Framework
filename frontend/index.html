@@ -1,310 +1,381 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-
 <meta charset="UTF-8">
-<title>Care Hospital Conversational IVR</title>
+<title>Care Hospital IVR</title>
 
 <style>
 
 body{
-font-family: Arial;
-background: linear-gradient(135deg,#0f172a,#1e293b);
-color:white;
-text-align:center;
-margin:0;
-padding:0;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg,#0f172a,#1e293b);
+    color:white;
+    margin:0;
 }
 
-h1{
-margin-top:20px;
+/* HEADER */
+.header{
+    background:#111827;
+    padding:15px;
+    text-align:center;
+    font-size:20px;
+    font-weight:bold;
 }
 
+/* MAIN LAYOUT */
 .container{
-display:flex;
-justify-content:center;
-margin-top:30px;
+    display:flex;
+    justify-content:center;
+    gap:40px;
+    padding:20px;
 }
 
-.phone{
-
-width:350px;
-background:#111827;
-border-radius:25px;
-padding:20px;
-box-shadow:0 0 30px rgba(0,0,0,0.6);
-
-}
-
-.screen{
-
-background:black;
-height:250px;
-overflow-y:auto;
-border-radius:10px;
-padding:15px;
-text-align:left;
-font-size:14px;
-
-}
-
-button{
-
-padding:10px 15px;
-margin:5px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-size:14px;
-
-}
-
-.start{
-background:#16a34a;
-color:white;
-}
-
-.stop{
-background:#dc2626;
-color:white;
-}
-
-.key{
-background:#334155;
-color:white;
-width:60px;
-}
-
-.voice{
-background:#2563eb;
-color:white;
-}
-
-.send{
-background:#9333ea;
-color:white;
-}
-
-input{
-
-width:90%;
-padding:10px;
-margin-top:10px;
-border-radius:8px;
-border:none;
-
+/* KEYPAD */
+.keypad-panel{
+    background:#111827;
+    padding:20px;
+    border-radius:20px;
 }
 
 .keypad{
-margin-top:10px;
+    display:grid;
+    grid-template-columns:repeat(3,80px);
+    gap:10px;
+}
+
+.key{
+    height:70px;
+    border-radius:50%;
+    border:none;
+    background:#334155;
+    color:white;
+    font-size:18px;
+    cursor:pointer;
+}
+
+.key:hover{
+    background:#2563eb;
+}
+
+/* SCREEN */
+.screen-panel{
+    width:420px;
+    background:#111827;
+    padding:20px;
+    border-radius:20px;
+}
+
+.screen{
+    height:300px;
+    overflow-y:auto;
+    background:black;
+    border-radius:10px;
+    padding:10px;
+}
+
+/* CHAT */
+.msg{
+    padding:10px;
+    margin:5px;
+    border-radius:10px;
+    max-width:80%;
+}
+
+.ivr{background:#1e293b;}
+.user{background:#2563eb; margin-left:auto;}
+
+/* INPUT */
+input{
+    width:95%;
+    padding:10px;
+    margin-top:10px;
+    border-radius:8px;
+    border:none;
+}
+
+/* BUTTONS */
+button{
+    padding:10px;
+    margin:5px;
+    border:none;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+}
+
+.send{background:#9333ea;}
+.voice{background:#2563eb;}
+
+/* FULL SCREEN CALL */
+#callOverlay{
+    position:fixed;
+    top:0;
+    left:0;
+    width:100%;
+    height:100%;
+    background:black;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    flex-direction:column;
+    z-index:9999;
+    text-align:center;
 }
 
 </style>
-
 </head>
 
 <body>
 
-<h1>🏥 Care Hospital</h1>
+<div class="header">🏥 Care Hospital IVR System</div>
+
+<!-- FULL SCREEN CALL -->
+<div id="callOverlay">
+    <h1 id="callTitle">📞 Calling Care Hospital...</h1>
+    <p id="callNumber"></p>
+</div>
 
 <div class="container">
 
-<div class="phone">
+    <!-- KEYPAD -->
+    <div class="keypad-panel">
 
-<div id="screen" class="screen"></div>
+        <div class="keypad">
+            <button class="key" onclick="press('1')">1</button>
+            <button class="key" onclick="press('2')">2</button>
+            <button class="key" onclick="press('3')">3</button>
 
-<br>
+            <button class="key" onclick="press('4')">4</button>
+            <button class="key" onclick="press('5')">5</button>
+            <button class="key" onclick="press('6')">6</button>
 
-<button class="start" onclick="startCall()">📞 Start Call</button>
+            <button class="key" onclick="press('7')">7</button>
+            <button class="key" onclick="press('8')">8</button>
+            <button class="key" onclick="press('9')">9</button>
 
-<button class="stop" onclick="stopCall()">❌ Stop Call</button>
+            <button class="key" onclick="press('*')">*</button>
+            <button class="key" onclick="press('0')">0</button>
+            <button class="key" onclick="press('#')">#</button>
+            <br>
+<button onclick="endCall()" style="
+    width:70px;
+    height:70px;
+    border-radius:50%;
+    background:;
+    color:white;
+    font-size:26px;
+    border:none;
+    cursor:pointer;
+    transition:0.3s;
+"
+onmouseover="this.style.transform='scale(1.1)'"
+onmouseout="this.style.transform='scale(1)'"
+>
+    📞
+</button>
+        </div>
 
-<div class="keypad">
+    </div>
 
-<br>
+    <!-- SCREEN -->
+    <div class="screen-panel">
 
-<button class="key" onclick="press('1')">1</button>
-<button class="key" onclick="press('2')">2</button>
-<button class="key" onclick="press('3')">3</button>
+        <div id="screen" class="screen"></div>
 
-<br>
+        <input id="textInput" placeholder="Type your request...">
 
-<button class="key" onclick="press('0')">0</button>
-<button class="key" onclick="press('9')">9</button>
+        <br>
 
-</div>
+        <button class="send" onclick="sendText()">Send</button>
+        <button class="voice" onclick="startVoice()">🎤 Speak</button>
 
-<input id="textInput" placeholder="Type your request...">
-
-<br>
-
-<button class="send" onclick="sendText()">Send</button>
-
-<button class="voice" onclick="startVoice()">🎤 Speak</button>
-
-</div>
+    </div>
 
 </div>
 
 <script>
 
 const API="http://127.0.0.1:8000"
-
 let sessionId=null
 
-function show(msg){
+function show(msg,type="ivr"){
 
-let screen=document.getElementById("screen")
+    let screen=document.getElementById("screen")
+    let cleanText=msg.replace("IVR:","").trim()
 
-// remove IVR text from display
-let cleanText = msg.replace("IVR:","").trim()
+    let div=document.createElement("div")
+    div.className="msg "+(type==="user"?"user":"ivr")
+    div.innerHTML=cleanText.replace(/\n/g,"<br>")
 
-screen.innerHTML += "<p>" + cleanText + "</p>"
+    screen.appendChild(div)
+    screen.scrollTop=screen.scrollHeight
 
-screen.scrollTop = screen.scrollHeight
-
-// speak only IVR responses
-if(msg.startsWith("IVR:")){
-    speak(cleanText)
-}
-
+    if(type==="ivr"){
+        speak(cleanText)
+    }
 }
 
 function speak(text){
 
-const speech=new SpeechSynthesisUtterance(text)
+    // ✅ REMOVE SYMBOLS FOR VOICE
+    let cleanText = text
+        .replace(/[:]/g, "")
+        .replace(/[\n]/g, ". ")
+        .replace(/[-]/g, " to ")
+        .replace(/[•]/g, "")
+        .replace(/[₹]/g, "rupees")
+        .replace(/[()]/g, "")
+        .replace(/\s+/g, " ")
+        .trim()
 
-speech.lang="en-IN"
+    let speech = new SpeechSynthesisUtterance(cleanText)
+    speech.lang = "en-IN"
 
-speech.rate=0.9
-
-window.speechSynthesis.speak(speech)
-
+    window.speechSynthesis.speak(speech)
 }
 
+/* AUTO CALL */
 async function startCall(){
 
-let res=await fetch(API+"/ivr/start",{
+    let overlay=document.getElementById("callOverlay")
+    let title=document.getElementById("callTitle")
+    let numberText=document.getElementById("callNumber")
 
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify({})
+    overlay.style.display="flex"
 
-})
+    let number="+91 "+Math.floor(9000000000+Math.random()*1000000000)
+    numberText.innerText="👤 Caller: "+number
 
-let data=await res.json()
+    title.innerText="📞 Calling Care Hospital..."
 
-sessionId=data.session_id
+    let res=await fetch(API+"/ivr/start",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({})
+    })
 
-show("IVR: "+data.prompt)
+    let data=await res.json()
+    sessionId=data.session_id
 
+    setTimeout(()=>{
+        title.innerText="📞 Call Connected"
+
+        setTimeout(()=>{
+            overlay.style.display="none"
+
+            //show("IVR: Welcome to Care Hospital.")
+            setTimeout(()=>{
+                show("IVR: "+data.prompt)
+            },1000)
+
+        },1500)
+
+    },2000)
 }
 
-function stopCall(){
-
-sessionId=null
-
-show("Call ended.")
-
-}
-
+/* KEYPAD */
 async function press(d){
 
-if(!sessionId){
+    if(!sessionId){
+        show("Start call first","user")
+        return
+    }
 
-show("Start call first")
+    let res=await fetch(API+"/ivr/input",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            session_id:sessionId,
+            digit:d
+        })
+    })
 
-return
-
+    let data=await res.json()
+    show("IVR: "+(data.prompt||data.message))
 }
 
-show("Pressed: "+d)
-
-let res=await fetch(API+"/ivr/input",{
-
-method:"POST",
-
-headers:{"Content-Type":"application/json"},
-
-body:JSON.stringify({
-
-session_id:sessionId,
-digit:d
-
-})
-
-})
-
-let data=await res.json()
-
-show("IVR: "+(data.prompt || data.message))
-
-}
-
+/* TEXT */
 async function sendText(){
 
-if(!sessionId){
+    let text = document.getElementById("textInput").value
+    show(text,"user")
 
-show("Start call first")
+    // ✅ IF NUMBER → SEND AS KEYPAD
+    if(!isNaN(text)){
 
-return
+        let res = await fetch(API+"/ivr/input",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({
+                session_id:sessionId,
+                digit:text
+            })
+        })
 
+        let data = await res.json()
+        show("IVR: "+(data.prompt || data.message))
+        return
+    }
+
+    // ✅ NORMAL TEXT FLOW
+    let res = await fetch(API+"/ivr/conversation",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            session_id:sessionId,
+            text:text
+        })
+    })
+
+    let data = await res.json()
+    show("IVR: "+(data.prompt || data.message))
 }
 
-let text=document.getElementById("textInput").value
-
-show("You: "+text)
-
-let res=await fetch(API+"/ivr/conversation",{
-
-method:"POST",
-
-headers:{"Content-Type":"application/json"},
-
-body:JSON.stringify({
-
-session_id:sessionId,
-text:text
-
-})
-
-})
-
-let data=await res.json()
-
-show("IVR: "+(data.prompt || data.message))
-
-}
-
+/* VOICE */
 function startVoice(){
 
-const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    const recognition = new SpeechRecognition()
 
-const recognition=new SpeechRecognition()
+    recognition.lang="en-IN"
+    recognition.start()
 
-recognition.lang="en-IN"
+    recognition.onresult = function(event){
 
-recognition.start()
+        let text = event.results[0][0].transcript
 
-show("Listening...")
+        document.getElementById("textInput").value = text
+        //show(text,"user")
 
-recognition.onresult=function(event){
-
-let speechText=event.results[0][0].transcript
-
-document.getElementById("textInput").value=speechText
-
-show("You (voice): "+speechText)
-
-sendText()
-
+        sendText()
+    }
 }
+function endCall(){
 
+    if(!sessionId){
+        show("No active call","user")
+        return
+    }
+
+    sessionId = null
+
+    // Clear chat (optional)
+    let screen = document.getElementById("screen")
+    screen.innerHTML = ""
+
+    // Show message
+    show("📴 Call Ended","user")
+
+    // Restart call after 2 sec (optional)
+  
+}
+/* AUTO START */
+window.onload=function(){
+    startCall()
 }
 
 </script>
 
 </body>
-
 </html>

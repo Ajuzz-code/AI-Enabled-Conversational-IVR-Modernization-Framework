@@ -1,1 +1,1 @@
-web: gunicorn hospital_ivr.wsgi
+web: gunicorn AI-Enabled-Conversational-IVR-Modernization-Framework.wsgi

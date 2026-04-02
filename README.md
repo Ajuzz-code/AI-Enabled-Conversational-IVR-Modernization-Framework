@@ -143,7 +143,11 @@ This project demonstrates how AI-powered IVR systems can modernize hospital admi
 
 It serves as a strong example of Conversational AI + IVR integration for real-world applications.
 
+<<<<<<< HEAD
 Deployed link : https://hospital-ivr.onrender.com
+=======
+Deployed link : [https://ai-enabled-conversational-ivr-xjac.onrender.com](https://hospital-ivr.onrender.com)
+>>>>>>> 9ceacfd520d6ca12f0e1a5e719a2c21ca9a6725b
 
 ---
 

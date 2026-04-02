@@ -1,3 +1,5 @@
+from fastapi.responses import FileResponse
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -96,5 +98,5 @@ def handle_text(data: TextInput):
     }
 
 @app.get("/")
-def root():
-    return {"status": "Running"}
+def serve_ui():
+    return FileResponse("frontend/index.html")

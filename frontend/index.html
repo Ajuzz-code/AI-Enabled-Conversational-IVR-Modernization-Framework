@@ -234,11 +234,7 @@ function speak(text){
 
     window.speechSynthesis.speak(speech)
 }
-document.body.addEventListener("click", () => {
-    if(!sessionId){
-        startCall()
-    }
-}, { once: true });
+
 
 /* AUTO CALL */
 async function startCall(){

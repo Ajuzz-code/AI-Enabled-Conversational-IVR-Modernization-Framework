@@ -1,1 +1,1 @@
-web: gunicorn AI-Enabled-Conversational-IVR-Modernization-Framework.wsgi
+web: uvicorn main:app --host 0.0.0.0 --port $PORT
